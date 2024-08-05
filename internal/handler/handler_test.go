@@ -104,6 +104,7 @@ func TestMetricHandlerUpdateMetric(t *testing.T) {
 			handler.UpdateMetric(w, addRequest)
 			updateRequest := httptest.NewRequest(http.MethodPost, tt.updateRequestURL, nil)
 			handler.UpdateMetric(w, updateRequest)
+			defer w.Result().Body.Close()
 			gotStatusCode := w.Code
 			assert.Equal(t, tt.wantStatusCode, gotStatusCode)
 			assert.Equal(t, expectedHeaderContentType, w.Result().Header.Get("Content-Type"))
