@@ -11,7 +11,7 @@ import (
 func RunApp() {
 	mux := http.NewServeMux()
 	inMemStorage := repository.NewInMemMetricStorage()
-	svc := service.New(inMemStorage)
+	svc := service.NewMetricService(inMemStorage)
 	mHandler := handler.NewMetricHandler(svc)
 	registerHandlers(mux, mHandler)
 
@@ -23,5 +23,6 @@ func RunApp() {
 func registerHandlers(
 	mux *http.ServeMux, metricsHandler *handler.MetricHandler,
 ) {
-	mux.HandleFunc("/update/{metricType}/{metricName}/{metricValue}", metricsHandler.UpdateMetric)
+	mux.HandleFunc(handler.UpdatePath, metricsHandler.UpdateMetric)
+	mux.Handle(handler.BasePath, http.NotFoundHandler())
 }

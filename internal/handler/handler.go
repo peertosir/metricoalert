@@ -10,7 +10,7 @@ import (
 )
 
 type MetricsSvc interface {
-	UpdateMetric(ctx context.Context, metricName, metricType, metricValue string) error
+	UpsertMetric(ctx context.Context, metricName, metricType, metricValue string) error
 }
 
 type MetricHandler struct {
@@ -24,18 +24,27 @@ func NewMetricHandler(svc MetricsSvc) *MetricHandler {
 }
 
 func (h *MetricHandler) UpdateMetric(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "plain/text")
+
+	reqURLParams := strings.TrimPrefix(req.URL.Path, UpdatePath)
+	reqPathParts := strings.Split(strings.TrimSuffix(reqURLParams, "/"), "/")
+	if len(reqPathParts) != 3 {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	metricType, metricName, metricValue := reqPathParts[0], reqPathParts[1], reqPathParts[2]
+
 	if req.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	metricType := req.PathValue(("metricType"))
-	metricName := strings.TrimSpace(req.PathValue(("metricName")))
-	metricValue := req.PathValue(("metricValue"))
-
-	err := h.svc.UpdateMetric(req.Context(), metricName, metricType, metricValue)
+	err := h.svc.UpsertMetric(req.Context(), metricName, metricType, metricValue)
 	if err != nil {
-		if errors.Is(err, errs.ErrUnknownMetricType) || errors.Is(err, errs.ErrWrongMetricValueType) {
+		if errors.Is(err, errs.ErrUnknownMetricType) ||
+			errors.Is(err, errs.ErrWrongMetricValueType) ||
+			errors.Is(err, errs.ErrMismatchMetricType) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
