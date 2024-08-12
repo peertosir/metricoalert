@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/peertosir/metricoalert/internal/errs"
@@ -79,7 +78,7 @@ func (ms *MetricService) GetMetric(ctx context.Context, metricName, metricType s
 		return strconv.FormatInt(*metric.IValue, 10), nil
 
 	case model.MetricTypeGauge:
-		return fmt.Sprintf("%f", *metric.FValue), nil
+		return strconv.FormatFloat(*metric.FValue, 'f', -1, 64), nil
 	default:
 		return "", errs.ErrUnknownMetricType
 	}
