@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -109,8 +110,13 @@ func (mg *MetricsGatherer) sendMetricsData() {
 }
 
 func (mg *MetricsGatherer) sendMetricsRequest(mType, mName, mValue string) {
+	requestURL := mg.metricServerURL
+	if !strings.HasPrefix(requestURL, "http") {
+		// fallback for http if protocol is not defined in URL
+		requestURL = "http://" + requestURL
+	}
 	req, err := http.NewRequest(http.MethodPost,
-		fmt.Sprintf("http://%s/update/%s/%s/%s", mg.metricServerURL, mType, mName, mValue),
+		fmt.Sprintf("%s/update/%s/%s/%s", requestURL, mType, mName, mValue),
 		nil,
 	)
 	if err != nil {
@@ -119,6 +125,7 @@ func (mg *MetricsGatherer) sendMetricsRequest(mType, mName, mValue string) {
 	req.Header.Set("Content-Type", "plain/text")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		log.Println(err)
 		log.Fatal("cannot send metrics to server")
 	}
 
