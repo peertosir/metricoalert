@@ -12,7 +12,7 @@ var (
 )
 
 func parseFlags() {
-	flag.StringVar(&sendAddress, "a", "http://localhost:8080", "http listen port")
+	flag.StringVar(&sendAddress, "a", "localhost:8080", "http listen port")
 	flag.IntVar(&reportInterval, "r", 10, "send metrics interval")
 	flag.IntVar(&pollInterval, "p", 2, "metrics polling interval")
 	flag.Parse()

@@ -110,7 +110,7 @@ func (mg *MetricsGatherer) sendMetricsData() {
 
 func (mg *MetricsGatherer) sendMetricsRequest(mType, mName, mValue string) {
 	req, err := http.NewRequest(http.MethodPost,
-		fmt.Sprintf("%s/update/%s/%s/%s", mg.metricServerURL, mType, mName, mValue),
+		fmt.Sprintf("http://%s/update/%s/%s/%s", mg.metricServerURL, mType, mName, mValue),
 		nil,
 	)
 	if err != nil {
