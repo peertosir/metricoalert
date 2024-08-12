@@ -1,7 +1,13 @@
 package main
 
-import "github.com/peertosir/metricoalert/internal/app"
+import (
+	"log"
+
+	"github.com/peertosir/metricoalert/internal/app"
+)
 
 func main() {
-	app.RunApp()
+	parseFlags()
+	log.Printf("Selected port: %s", listenPort)
+	app.RunApp(listenPort)
 }

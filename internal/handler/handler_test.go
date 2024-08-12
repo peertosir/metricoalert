@@ -90,9 +90,9 @@ func TestMetricHandlerAddMetric(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			handler.UpdateMetric(w, getMetricUpdateRequestWithCtx(tt.metricName, tt.metricType, tt.metricValue))
-			gotStatusCode := w.Result().StatusCode
-			defer w.Result().Body.Close()
-			assert.Equal(t, tt.wantStatusCode, gotStatusCode)
+			result := w.Result()
+			defer result.Body.Close()
+			assert.Equal(t, tt.wantStatusCode, result.StatusCode)
 		})
 	}
 }
@@ -150,11 +150,11 @@ func TestMetricHandlerUpdateMetric(t *testing.T) {
 			assert.Equal(t, http.StatusOK, response.StatusCode)
 			w = httptest.NewRecorder()
 			handler.UpdateMetric(w, getMetricUpdateRequestWithCtx(tt.metricName, tt.updateMetricType, tt.updateMetricValue))
-			response = w.Result()
-			defer response.Body.Close()
-			gotStatusCode := response.StatusCode
+			response2 := w.Result()
+			defer response2.Body.Close()
+			gotStatusCode := response2.StatusCode
 			assert.Equal(t, tt.wantStatusCode, gotStatusCode)
-			assert.Equal(t, expectedHeaderContentType, w.Result().Header.Get("Content-Type"))
+			assert.Equal(t, expectedHeaderContentType, response2.Header.Get("Content-Type"))
 		})
 	}
 }

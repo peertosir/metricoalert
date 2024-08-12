@@ -7,6 +7,11 @@ import (
 )
 
 func main() {
-	mg := agent.NewMetricsGatherer("http://localhost:8080", 10*time.Second, 2*time.Second, 1*time.Minute)
+	parseFlags()
+	mg := agent.NewMetricsGatherer(
+		sendAddress, time.Duration(reportInterval)*time.Second,
+		time.Duration(pollInterval)*time.Second,
+		1*time.Minute,
+	)
 	mg.RunMetricsGatherer()
 }
