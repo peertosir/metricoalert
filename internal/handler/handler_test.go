@@ -1,51 +1,83 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi"
 	"github.com/peertosir/metricoalert/internal/model"
 	"github.com/peertosir/metricoalert/internal/repository"
 	"github.com/peertosir/metricoalert/internal/service"
 	"github.com/stretchr/testify/assert"
 )
 
+func getMetricUpdateRequestWithCtx(metricName, metricType, metricValue string) *http.Request {
+	var requestURL string
+	if metricName != "" {
+		requestURL = fmt.Sprintf("/update/%s/%s/%s", metricType, metricName, metricValue)
+	} else {
+		requestURL = fmt.Sprintf("/update/%s/%s", metricType, metricValue)
+	}
+	request := httptest.NewRequest(http.MethodPost, requestURL, nil)
+	ctx := chi.NewRouteContext()
+	ctx.URLParams.Add("metricType", metricType)
+	ctx.URLParams.Add("metricName", metricName)
+	ctx.URLParams.Add("metricValue", metricValue)
+	return request.WithContext(context.WithValue(request.Context(), chi.RouteCtxKey, ctx))
+}
+
 func TestMetricHandlerAddMetric(t *testing.T) {
 	tests := []struct {
 		name           string
+		metricType     string
+		metricName     string
+		metricValue    string
 		requestURL     string
 		wantStatusCode int
 	}{
 		{
 			name:           "success gauge metric",
-			requestURL:     fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeGauge, "testgm1", "2.3"),
+			metricType:     model.MetricTypeGauge,
+			metricName:     "testgm1",
+			metricValue:    "2.3",
 			wantStatusCode: http.StatusOK,
 		},
 		{
 			name:           "success counter metric",
-			requestURL:     fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeCounter, "testcm1", "2"),
+			metricType:     model.MetricTypeCounter,
+			metricName:     "testcm1",
+			metricValue:    "2",
 			wantStatusCode: http.StatusOK,
 		},
 		{
 			name:           "wrong type value for gauge metric",
-			requestURL:     fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeGauge, "test_wrong_type_g", "invalidtype"),
+			metricType:     model.MetricTypeGauge,
+			metricName:     "test_wrong_type_g",
+			metricValue:    "invalidtype",
 			wantStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:           "wrong type value for counter metric",
-			requestURL:     fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeCounter, "test_wrong_type_c", "invalidtype"),
+			metricType:     model.MetricTypeCounter,
+			metricName:     "test_wrong_type_c",
+			metricValue:    "invalidtype",
 			wantStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:           "wrong type for metric",
-			requestURL:     fmt.Sprintf("/update/%s/%s/%s", "wonderfulmetric", "wrong_type_for_metric", "2.1"),
+			metricType:     "wonderfulmetric",
+			metricName:     "wrong_type_for_metric",
+			metricValue:    "2.1",
 			wantStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:           "no metric name provided",
-			requestURL:     fmt.Sprintf("/update/%s/%s", "wonderfulmetric", "2.1"),
+			metricType:     model.MetricTypeCounter,
+			metricName:     "",
+			metricValue:    "2",
 			wantStatusCode: http.StatusNotFound,
 		},
 	}
@@ -56,10 +88,10 @@ func TestMetricHandlerAddMetric(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, tt.requestURL, nil)
 			w := httptest.NewRecorder()
-			handler.UpdateMetric(w, request)
-			gotStatusCode := w.Code
+			handler.UpdateMetric(w, getMetricUpdateRequestWithCtx(tt.metricName, tt.metricType, tt.metricValue))
+			gotStatusCode := w.Result().StatusCode
+			defer w.Result().Body.Close()
 			assert.Equal(t, tt.wantStatusCode, gotStatusCode)
 		})
 	}
@@ -68,28 +100,40 @@ func TestMetricHandlerAddMetric(t *testing.T) {
 func TestMetricHandlerUpdateMetric(t *testing.T) {
 	expectedHeaderContentType := "plain/text"
 	tests := []struct {
-		name             string
-		addRequestURL    string
-		updateRequestURL string
-		wantStatusCode   int
+		name              string
+		metricName        string
+		addMetricType     string
+		updateMetricType  string
+		addMetricValue    string
+		updateMetricValue string
+		wantStatusCode    int
 	}{
 		{
-			name:             "success gauge metric",
-			addRequestURL:    fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeGauge, "testgm1", "2.3"),
-			updateRequestURL: fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeGauge, "testgm1", "4.3"),
-			wantStatusCode:   http.StatusOK,
+			name:              "success gauge metric",
+			addMetricType:     model.MetricTypeGauge,
+			updateMetricType:  model.MetricTypeGauge,
+			addMetricValue:    "2.2",
+			updateMetricValue: "4.3",
+			metricName:        "somename1",
+			wantStatusCode:    http.StatusOK,
 		},
 		{
-			name:             "success counter metric",
-			addRequestURL:    fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeGauge, "testcm1", "2"),
-			updateRequestURL: fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeGauge, "testcm1", "4"),
-			wantStatusCode:   http.StatusOK,
+			name:              "success counter metric",
+			addMetricType:     model.MetricTypeCounter,
+			updateMetricType:  model.MetricTypeCounter,
+			addMetricValue:    "2",
+			updateMetricValue: "4",
+			metricName:        "somename2",
+			wantStatusCode:    http.StatusOK,
 		},
 		{
-			name:             "wrong type for update metric",
-			addRequestURL:    fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeCounter, "testcm1", "2"),
-			updateRequestURL: fmt.Sprintf("/update/%s/%s/%s", model.MetricTypeGauge, "testcm1", "2.3"),
-			wantStatusCode:   http.StatusBadRequest,
+			name:              "wrong type for update metric",
+			addMetricType:     model.MetricTypeGauge,
+			updateMetricType:  model.MetricTypeCounter,
+			addMetricValue:    "2.2",
+			updateMetricValue: "4",
+			metricName:        "somename3",
+			wantStatusCode:    http.StatusBadRequest,
 		},
 	}
 
@@ -99,13 +143,16 @@ func TestMetricHandlerUpdateMetric(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addRequest := httptest.NewRequest(http.MethodPost, tt.addRequestURL, nil)
 			w := httptest.NewRecorder()
-			handler.UpdateMetric(w, addRequest)
-			updateRequest := httptest.NewRequest(http.MethodPost, tt.updateRequestURL, nil)
-			handler.UpdateMetric(w, updateRequest)
-			defer w.Result().Body.Close()
-			gotStatusCode := w.Code
+			handler.UpdateMetric(w, getMetricUpdateRequestWithCtx(tt.metricName, tt.addMetricType, tt.addMetricValue))
+			response := w.Result()
+			defer response.Body.Close()
+			assert.Equal(t, http.StatusOK, response.StatusCode)
+			w = httptest.NewRecorder()
+			handler.UpdateMetric(w, getMetricUpdateRequestWithCtx(tt.metricName, tt.updateMetricType, tt.updateMetricValue))
+			response = w.Result()
+			defer response.Body.Close()
+			gotStatusCode := response.StatusCode
 			assert.Equal(t, tt.wantStatusCode, gotStatusCode)
 			assert.Equal(t, expectedHeaderContentType, w.Result().Header.Get("Content-Type"))
 		})

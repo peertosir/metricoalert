@@ -3,14 +3,18 @@ package handler
 import (
 	"context"
 	"errors"
+	"html/template"
 	"net/http"
-	"strings"
 
+	"github.com/go-chi/chi"
 	"github.com/peertosir/metricoalert/internal/errs"
+	"github.com/peertosir/metricoalert/internal/model"
 )
 
 type MetricsSvc interface {
 	UpsertMetric(ctx context.Context, metricName, metricType, metricValue string) error
+	GetMetric(ctx context.Context, metricName, metricType string) (string, error)
+	GetMetrics(ctx context.Context) ([]model.Metric, error)
 }
 
 type MetricHandler struct {
@@ -23,17 +27,52 @@ func NewMetricHandler(svc MetricsSvc) *MetricHandler {
 	}
 }
 
-func (h *MetricHandler) UpdateMetric(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "plain/text")
+func (h *MetricHandler) GetAllMetricsHTML(w http.ResponseWriter, req *http.Request) {
+	metrics, err := h.svc.GetMetrics(req.Context())
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	t, err := template.ParseFiles("templates/index.html")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	err = t.Execute(w, metrics)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
 
-	reqURLParams := strings.TrimPrefix(req.URL.Path, UpdatePath)
-	reqPathParts := strings.Split(strings.TrimSuffix(reqURLParams, "/"), "/")
-	if len(reqPathParts) != 3 {
+func (h *MetricHandler) GetMetric(w http.ResponseWriter, req *http.Request) {
+	metricType := chi.URLParam(req, "metricType")
+	metricName := chi.URLParam(req, "metricName")
+
+	value, err := h.svc.GetMetric(req.Context(), metricName, metricType)
+	if errors.Is(err, errs.ErrMetricNotFound) || errors.Is(err, errs.ErrUnknownMetricType) {
 		w.WriteHeader(http.StatusNotFound)
+
+		return
+	} else if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	metricType, metricName, metricValue := reqPathParts[0], reqPathParts[1], reqPathParts[2]
+	w.Write([]byte(value))
+}
+
+func (h *MetricHandler) UpdateMetric(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "plain/text")
+
+	metricType := chi.URLParam(req, "metricType")
+	metricName := chi.URLParam(req, "metricName")
+	metricValue := chi.URLParam(req, "metricValue")
+
+	if metricName == "" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
 
 	if req.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)

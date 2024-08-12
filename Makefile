@@ -1,6 +1,6 @@
-runsv:
+srv:
 	go run ./cmd/server
-runagent:
+agent:
 	go run ./cmd/agent
-runtest:
+test:
 	go test -v -coverpkg=./... -cover  ./... 

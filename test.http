@@ -1,2 +1,2 @@
 ###
-POST http://localhost:8080/update/counter/123
+POST http://localhost:8080/update/gauge/123/2.3

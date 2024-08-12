@@ -3,26 +3,28 @@ package app
 import (
 	"net/http"
 
+	"github.com/go-chi/chi"
 	"github.com/peertosir/metricoalert/internal/handler"
 	"github.com/peertosir/metricoalert/internal/repository"
 	"github.com/peertosir/metricoalert/internal/service"
 )
 
 func RunApp() {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
 	inMemStorage := repository.NewInMemMetricStorage()
 	svc := service.NewMetricService(inMemStorage)
 	mHandler := handler.NewMetricHandler(svc)
-	registerHandlers(mux, mHandler)
+	registerHandlers(r, mHandler)
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := http.ListenAndServe(":8080", r); err != nil {
 		panic(err)
 	}
 }
 
 func registerHandlers(
-	mux *http.ServeMux, metricsHandler *handler.MetricHandler,
+	mux *chi.Mux, metricsHandler *handler.MetricHandler,
 ) {
-	mux.HandleFunc(handler.UpdatePath, metricsHandler.UpdateMetric)
-	mux.Handle(handler.BasePath, http.NotFoundHandler())
+	mux.Post(handler.UpdatePath, metricsHandler.UpdateMetric)
+	mux.Get(handler.ValuePath, metricsHandler.GetMetric)
+	mux.Get(handler.HomePath, metricsHandler.GetAllMetricsHTML)
 }

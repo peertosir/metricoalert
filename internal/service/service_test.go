@@ -109,3 +109,43 @@ func TestMetricService_UpsertMetricUpdate(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMetricValue(t *testing.T) {
+	expectedValue := "2"
+	metricName := "some"
+	metricType := model.MetricTypeCounter
+	repo := repository.NewInMemMetricStorage()
+	svc := NewMetricService(repo)
+	metric, err := model.NewCounterMetric(nil, metricName, expectedValue)
+	assert.NoError(t, err)
+	err = repo.UpsertMetric(context.Background(), metric)
+	assert.NoError(t, err)
+
+	value, err := svc.GetMetric(context.Background(), metricName, metricType)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedValue, value)
+}
+
+func TestGetNonExistMetricValue(t *testing.T) {
+	metricName := "some"
+	metricType := model.MetricTypeCounter
+	repo := repository.NewInMemMetricStorage()
+	svc := NewMetricService(repo)
+
+	value, err := svc.GetMetric(context.Background(), metricName, metricType)
+	assert.ErrorIs(t, err, errs.ErrMetricNotFound)
+	assert.Empty(t, value)
+}
+
+func TestGetMetrics(t *testing.T) {
+	repo := repository.NewInMemMetricStorage()
+	svc := NewMetricService(repo)
+	metric, err := model.NewCounterMetric(nil, "1", "22")
+	assert.NoError(t, err)
+	err = repo.UpsertMetric(context.Background(), metric)
+	assert.NoError(t, err)
+
+	value, err := svc.GetMetrics(context.Background())
+	assert.NoError(t, err)
+	assert.Len(t, value, 1)
+}

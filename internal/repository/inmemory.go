@@ -29,3 +29,13 @@ func (ims *InMemMetricStorage) GetMetricByName(_ context.Context, name string) (
 	}
 	return metric, nil
 }
+
+func (ims *InMemMetricStorage) GetMetrics(ctx context.Context) ([]model.Metric, error) {
+	var returnValue []model.Metric
+
+	for _, m := range ims.data {
+		returnValue = append(returnValue, *m)
+	}
+
+	return returnValue, nil
+}
