@@ -8,6 +8,6 @@ import (
 
 func main() {
 	parseFlags()
-	log.Printf("Selected port: %s", listenPort)
-	app.RunApp(listenPort)
+	log.Printf("Selected port: %s", listenAddr)
+	app.RunApp(listenAddr)
 }

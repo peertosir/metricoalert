@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	parseFlags()
+	initData()
 	mg := agent.NewMetricsGatherer(
 		sendAddress, time.Duration(reportInterval)*time.Second,
 		time.Duration(pollInterval)*time.Second,
