@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +14,7 @@ func TestGatherMetrics(t *testing.T) {
 	wantPollCounter := 1
 	wantLenMCounter := 1
 	wantLenMGauge := 28
-	mg := NewMetricsGatherer("", 2*time.Second, 1*time.Second, 2100*time.Millisecond)
+	mg := NewMetricsGatherer("", 2*time.Second, 1*time.Second)
 	mg.gatherMetrics()
 
 	assert.Equal(t, wantPollCounter, mg.pollCounter)
@@ -32,10 +31,10 @@ func TestSendMetrics(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	mg := NewMetricsGatherer(ts.URL, 2*time.Second, 1*time.Second, 2100*time.Millisecond)
+	mg := NewMetricsGatherer(ts.URL, 2*time.Second, 1*time.Second)
 	mg.dataCounter["MockMetricC"] = "someC"
 	mg.dataGauge["MockMetricG"] = "someG"
-	mg.sendMetricsData(context.Background())
+	mg.sendMetricsData()
 
 	assert.Equal(t, wantHandlerHit, gotHandlerHit)
 }

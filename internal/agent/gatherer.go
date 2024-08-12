@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"math/rand"
@@ -23,14 +22,13 @@ type MetricsGatherer struct {
 	dataGauge        map[string]string
 	sendTickerTime   time.Duration
 	gatherTickerTime time.Duration
-	overallTimeout   time.Duration
 	pollCounter      int
 	metricServerURL  string
 }
 
 func NewMetricsGatherer(
 	metricServerURL string,
-	sendTickerTime, gatherTickerTime, overallTimeout time.Duration,
+	sendTickerTime, gatherTickerTime time.Duration,
 ) *MetricsGatherer {
 	return &MetricsGatherer{
 		dataCounter:      make(map[string]string),
@@ -38,7 +36,6 @@ func NewMetricsGatherer(
 		pollCounter:      0,
 		sendTickerTime:   sendTickerTime,
 		gatherTickerTime: gatherTickerTime,
-		overallTimeout:   overallTimeout,
 		metricServerURL:  metricServerURL,
 	}
 }
@@ -86,39 +83,33 @@ func (mg *MetricsGatherer) gatherMetrics() {
 func (mg *MetricsGatherer) RunMetricsGatherer() {
 	sendTicker := time.NewTicker(mg.sendTickerTime)
 	gatherTicker := time.NewTicker(mg.gatherTickerTime)
-	timeoutCtx, cancel := context.WithTimeout(context.Background(), mg.overallTimeout)
-	defer cancel()
 	for {
 		select {
 		case <-gatherTicker.C:
 			go mg.gatherMetrics()
 		case <-sendTicker.C:
-			go mg.sendMetricsData(timeoutCtx)
-		case <-timeoutCtx.Done():
-			mg.sendMetricsData(context.Background())
-			return
+			go mg.sendMetricsData()
 		}
 	}
 }
 
-func (mg *MetricsGatherer) sendMetricsData(ctx context.Context) {
+func (mg *MetricsGatherer) sendMetricsData() {
 	fmt.Println("sending metrics data to server")
 	mg.l.RLock()
 	defer mg.l.RUnlock()
 	for name, value := range mg.dataGauge {
 		fmt.Printf("[%s] sending %s=%s to server\n", model.MetricTypeGauge, name, value)
-		mg.sendMetricsRequest(ctx, model.MetricTypeGauge, name, value)
+		mg.sendMetricsRequest(model.MetricTypeGauge, name, value)
 	}
 
 	for name, value := range mg.dataCounter {
 		fmt.Printf("[%s] sending %s=%s to server\n", model.MetricTypeCounter, name, value)
-		mg.sendMetricsRequest(ctx, model.MetricTypeCounter, name, value)
+		mg.sendMetricsRequest(model.MetricTypeCounter, name, value)
 	}
 }
 
-func (mg *MetricsGatherer) sendMetricsRequest(ctx context.Context, mType, mName, mValue string) {
-	req, err := http.NewRequestWithContext(
-		ctx, http.MethodPost,
+func (mg *MetricsGatherer) sendMetricsRequest(mType, mName, mValue string) {
+	req, err := http.NewRequest(http.MethodPost,
 		fmt.Sprintf("%s/update/%s/%s/%s", mg.metricServerURL, mType, mName, mValue),
 		nil,
 	)

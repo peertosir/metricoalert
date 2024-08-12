@@ -1,5 +1,5 @@
 srv:
-	go run ./cmd/server -a :8081
+	go run ./cmd/server
 agent:
 	go run ./cmd/agent
 test:
