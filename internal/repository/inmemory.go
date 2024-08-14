@@ -30,8 +30,8 @@ func (ims *InMemMetricStorage) GetMetricByName(_ context.Context, name string) (
 	return metric, nil
 }
 
-func (ims *InMemMetricStorage) GetMetrics(ctx context.Context) ([]model.Metric, error) {
-	var returnValue []model.Metric
+func (ims *InMemMetricStorage) GetMetrics(_ context.Context) ([]model.Metric, error) {
+	returnValue := make([]model.Metric, 0, len(ims.data))
 
 	for _, m := range ims.data {
 		returnValue = append(returnValue, *m)

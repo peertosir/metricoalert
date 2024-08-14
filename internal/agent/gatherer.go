@@ -46,7 +46,7 @@ func (mg *MetricsGatherer) gatherMetrics() {
 	runtime.ReadMemStats(memData)
 	mg.l.Lock()
 	defer mg.l.Unlock()
-	mg.pollCounter += 1
+	mg.pollCounter++
 	mg.dataGauge["Alloc"] = fmt.Sprintf("%v", memData.Alloc)
 	mg.dataGauge["BuckHashSys"] = fmt.Sprintf("%v", memData.BuckHashSys)
 	mg.dataGauge["Frees"] = fmt.Sprintf("%v", memData.Frees)
@@ -117,7 +117,7 @@ func (mg *MetricsGatherer) sendMetricsRequest(mType, mName, mValue string) {
 	}
 	req, err := http.NewRequest(http.MethodPost,
 		fmt.Sprintf("%s/update/%s/%s/%s", requestURL, mType, mName, mValue),
-		nil,
+		http.NoBody,
 	)
 	if err != nil {
 		log.Fatal("cannot create request to server")
