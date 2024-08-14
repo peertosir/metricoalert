@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>All articles</title>
+</head>
+<body>
+    <h1>Metrics list</h1>
+{{if eq (len .) 0}}
+No metrics found.
+{{end}}
+{{range .}}
+<div>
+    {{.Name}}[{{.Type}}]={{if eq .Type "counter" }}{{.IValue}}{{else}}{{.FValue}}{{end}}
+</div>
+{{end}}
+</body>
+</html>
