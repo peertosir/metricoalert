@@ -7,9 +7,11 @@ import (
 )
 
 var listenAddr string
+var logLevel string
 
 func parseFlags() {
 	flag.StringVar(&listenAddr, "a", "localhost:8080", "http listen port")
+	flag.StringVar(&logLevel, "log", "INFO", "log level for logger")
 	flag.Parse()
 	if len(flag.Args()) != 0 {
 		log.Fatalf("got some unexpected args: %+v", flag.Args())

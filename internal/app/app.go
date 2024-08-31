@@ -5,12 +5,16 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/peertosir/metricoalert/internal/handler"
+	"github.com/peertosir/metricoalert/internal/logger"
+	"github.com/peertosir/metricoalert/internal/middleware"
 	"github.com/peertosir/metricoalert/internal/repository"
 	"github.com/peertosir/metricoalert/internal/service"
 )
 
-func RunApp(port string) {
+func RunApp(port string, logLevel string) {
+	logger.InitLogger(logLevel)
 	r := chi.NewRouter()
+	r.Use(middleware.LoggingMiddleware)
 	inMemStorage := repository.NewInMemMetricStorage()
 	svc := service.NewMetricService(inMemStorage)
 	mHandler := handler.NewMetricHandler(svc)

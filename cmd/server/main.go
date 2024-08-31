@@ -9,5 +9,5 @@ import (
 func main() {
 	parseFlags()
 	log.Printf("Selected port: %s", listenAddr)
-	app.RunApp(listenAddr)
+	app.RunApp(listenAddr, logLevel)
 }
